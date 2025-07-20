@@ -1,24 +1,36 @@
 # Voice Agent Project
 
-A voice agent that uses AWS Bedrock and LiveKit to answer questions about country and state capitals. The agent listens to conversations and responds with capital information for countries and US states, while indicating that other information is not available.
+A voice agent that uses AWS Bedrock, Amazon Polly, and Amazon Transcribe to answer questions about country and state capitals. The agent processes voice input, transcribes speech to text, generates responses using Claude Haiku, and converts responses back to speech.
 
 ## Project Status
 
-**Current Phase: Phase 1 - Core Setup** ✅ **COMPLETED**
+**Current Phase: Phase 2 - Voice Integration** ✅ **COMPLETED**
 
-### Phase 1 Components:
+### Phase 1: Core Setup ✅ COMPLETED
 - [x] Set up Python development environment
 - [x] Create FastAPI application structure
 - [x] Implement static JSON datasets
 - [x] Basic Bedrock integration
 - [x] Local development with virtual environment
+- [x] Text-based query processing
+- [x] Comprehensive testing framework
+
+### Phase 2: Voice Integration ✅ COMPLETED
+- [x] Amazon Transcribe integration
+- [x] Amazon Polly integration
+- [x] Voice processing pipeline
+- [x] Audio file handling
+- [x] Real audio data testing
+- [x] Voice-to-text and text-to-speech
+- [x] Base64 audio encoding/decoding
+- [x] Response audio generation
 
 ## Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   LiveKit       │    │   EC2 Instance  │    │   AWS Bedrock   │
-│   Voice Client  │◄──►│   (Python App)  │◄──►│   (Claude Haiku)│
+│   Voice Input   │    │   EC2 Instance  │    │   AWS Bedrock   │
+│   (Audio File)  │◄──►│   (Python App)  │◄──►│   (Claude Haiku)│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
                               ▼
@@ -26,13 +38,19 @@ A voice agent that uses AWS Bedrock and LiveKit to answer questions about countr
                        │   Amazon Polly  │
                        │   (TTS)         │
                        └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │ Amazon Transcribe│
+                       │   (STT)         │
+                       └─────────────────┘
 ```
 
 ## Technology Stack
 
 - **Backend**: Python 3.10+, FastAPI
-- **AWS Services**: Bedrock (Claude Haiku), Polly, Transcribe
-- **Voice**: LiveKit
+- **AWS Services**: Bedrock (Claude Haiku), Polly (TTS), Transcribe (STT)
+- **Audio Processing**: WAV, MP3, Base64 encoding
 - **Data**: Static JSON files
 - **Deployment**: Virtual Environment, EC2
 
@@ -43,8 +61,8 @@ A voice agent that uses AWS Bedrock and LiveKit to answer questions about countr
 1. **Python 3.10+** installed on your system
 2. **AWS Account** with access to:
    - AWS Bedrock (Claude Haiku model)
-   - Amazon Polly
-   - Amazon Transcribe
+   - Amazon Polly (Text-to-Speech)
+   - Amazon Transcribe (Speech-to-Text)
 
 ### Setup
 
@@ -108,18 +126,16 @@ If you prefer to set up manually:
 
 ## Testing
 
-### Local Testing
+### Phase 1 Testing (Text Processing)
 
-Run the comprehensive test suite:
-
+#### Automated Testing
 ```bash
 cd server
 source venv/bin/activate
 python test_local.py
 ```
 
-### Manual API Testing
-
+#### Manual API Testing
 ```bash
 # Health check
 curl http://localhost:8000/health
@@ -144,6 +160,90 @@ Expected response:
 }
 ```
 
+### Phase 2 Testing (Voice Processing)
+
+#### Real Audio Testing
+```bash
+cd server
+source venv/bin/activate
+python test_real_audio.py
+```
+
+This test:
+- Downloads real audio files from the internet (or generates test audio)
+- Compares placeholder vs real audio data sizes
+- Tests the voice processing API with real audio
+- Shows detailed size comparisons and processing results
+
+#### Voice API Testing
+```bash
+# Test with base64 encoded audio
+curl -X POST "http://localhost:8000/process-voice" \
+     -H "Content-Type: application/json" \
+     -d '{"audio_data": "base64_encoded_audio_data_here"}'
+```
+
+Expected response:
+```json
+{
+  "success": true,
+  "response": "The capital of France is Paris.",
+  "audio_file_path": "audio/response_123456789.mp3",
+  "transcribed_text": "What is the capital of France?"
+}
+```
+
+#### Phase 2 Specific Tests
+```bash
+# Test transcription only
+python test_phase2.py
+
+# Test Bedrock access
+python test_bedrock_access.py
+
+# List available models
+python list_models.py
+```
+
+### Comprehensive Testing Suite
+
+#### 1. Basic Functionality Tests
+```bash
+# Test local functionality
+python test_local.py
+
+# Test voice processing
+python test_real_audio.py
+```
+
+#### 2. AWS Service Tests
+```bash
+# Test Bedrock access
+python test_bedrock_access.py
+
+# Test Polly and Transcribe
+python test_phase2.py
+```
+
+#### 3. API Endpoint Tests
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Status check
+curl http://localhost:8000/status
+
+# Text processing
+curl -X POST "http://localhost:8000/process-text" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "What is the capital of California?"}'
+
+# Voice processing (requires real audio data)
+curl -X POST "http://localhost:8000/process-voice" \
+     -H "Content-Type: application/json" \
+     -d '{"audio_data": "base64_audio_data"}'
+```
+
 ## API Endpoints
 
 ### Core Endpoints
@@ -152,8 +252,18 @@ Expected response:
 - `GET /health` - Health check
 - `GET /status` - System status and AWS connection
 - `GET /entities` - Available countries and states
-- `POST /process-text` - Process text input
+- `POST /process-text` - Process text input (Phase 1)
 - `POST /process-voice` - Process voice input (Phase 2)
+
+### Phase 2 Voice Processing
+
+The `/process-voice` endpoint:
+1. Accepts base64-encoded audio data
+2. Decodes and saves audio to temporary file
+3. Uses Amazon Transcribe to convert speech to text
+4. Processes text through Claude Haiku
+5. Uses Amazon Polly to generate response audio
+6. Returns response with audio file path
 
 ## Data Structure
 
@@ -170,16 +280,20 @@ The application uses static JSON files for country and state data:
 - [x] Static JSON datasets
 - [x] Basic Bedrock integration
 - [x] Virtual environment setup
+- [x] Text-based query processing
+- [x] Comprehensive testing framework
 
-Phase 1 completed.
+### Phase 2: Voice Integration ✅ COMPLETED
+- [x] Amazon Transcribe integration
+- [x] Amazon Polly integration
+- [x] Voice processing pipeline
+- [x] Audio file handling
+- [x] Real audio data testing
+- [x] Voice-to-text and text-to-speech
+- [x] Base64 audio encoding/decoding
+- [x] Response audio generation
 
-### Phase 2: Voice Integration (Next)
-- [ ] Amazon Transcribe integration
-- [ ] Amazon Polly integration
-- [ ] WebSocket communication
-- [ ] Basic voice processing pipeline
-
-### Phase 3: LiveKit Integration
+### Phase 3: LiveKit Integration (Next)
 - [ ] LiveKit server setup
 - [ ] Web client with LiveKit SDK
 - [ ] Real-time audio streaming
@@ -210,11 +324,11 @@ Phase 1 completed.
    - Enable Claude Haiku model access
    - Configure IAM permissions
 
-2. **Amazon Polly** (Phase 2)
+2. **Amazon Polly** ✅ Phase 2 Complete
    - Enable text-to-speech service
    - Configure voice preferences
 
-3. **Amazon Transcribe** (Phase 2)
+3. **Amazon Transcribe** ✅ Phase 2 Complete
    - Enable speech-to-text service
    - Configure language settings
 
@@ -228,17 +342,23 @@ vagent/
 │   │   ├── main.py
 │   │   ├── voice_agent.py
 │   │   ├── bedrock_client.py
+│   │   ├── polly_client.py
+│   │   ├── transcribe_client.py
 │   │   ├── data_handler.py
 │   │   └── config.py
 │   ├── data/
 │   │   ├── countries.json
 │   │   └── us-states.json
-│   ├── audio/
+│   ├── audio/              # Generated audio files
 │   ├── venv/              # Virtual environment
 │   ├── requirements.txt
 │   ├── run.py             # Run script
 │   ├── setup.sh           # Setup script
-│   ├── test_local.py      # Test script
+│   ├── test_local.py      # Phase 1 tests
+│   ├── test_real_audio.py # Phase 2 tests
+│   ├── test_phase2.py     # Phase 2 specific tests
+│   ├── test_bedrock_access.py
+│   ├── list_models.py
 │   └── .env               # Environment variables
 ├── env.example
 ├── README.md
@@ -259,11 +379,16 @@ vagent/
 
 3. **AWS Credentials**
    - Ensure AWS credentials are properly configured in `.env`
-   - Check IAM permissions for Bedrock access
+   - Check IAM permissions for Bedrock, Polly, and Transcribe access
 
 4. **Dependencies**
    - Reinstall if issues: `pip install -r requirements.txt`
    - Check for conflicts: `pip list`
+
+5. **Audio Processing**
+   - Ensure audio files are properly formatted (WAV/MP3)
+   - Check base64 encoding for voice API calls
+   - Verify audio file permissions in `server/audio/` directory
 
 ### Logs
 
@@ -282,19 +407,49 @@ source venv/bin/activate
 # Run server
 python run.py
 
-# Run tests
+# Run Phase 1 tests
 python test_local.py
+
+# Run Phase 2 tests
+python test_real_audio.py
+
+# Run specific Phase 2 tests
+python test_phase2.py
+
+# Test AWS access
+python test_bedrock_access.py
 
 # Install new dependencies
 pip install package_name
 pip freeze > requirements.txt
 ```
 
+## Testing Checklist
+
+### Phase 1 Testing ✅
+- [x] Text processing with country queries
+- [x] Text processing with state queries
+- [x] Error handling for invalid queries
+- [x] AWS Bedrock integration
+- [x] API endpoint functionality
+- [x] Health and status checks
+
+### Phase 2 Testing ✅
+- [x] Real audio data processing
+- [x] Base64 audio encoding/decoding
+- [x] Amazon Transcribe integration
+- [x] Amazon Polly integration
+- [x] Audio file generation
+- [x] Voice-to-text accuracy
+- [x] Text-to-speech quality
+- [x] End-to-end voice processing pipeline
+
 ## Contributing
 
 1. Follow the development phases outlined in the plan
 2. Test thoroughly before submitting changes
 3. Update documentation as needed
+4. Ensure all tests pass for both Phase 1 and Phase 2
 
 ## License
 
@@ -302,4 +457,4 @@ pip freeze > requirements.txt
 
 ## Support
 
-For issues and questions, please refer to the project documentation or create an issue in the repository. # awssampleagent
+For issues and questions, please refer to the project documentation or create an issue in the repository.

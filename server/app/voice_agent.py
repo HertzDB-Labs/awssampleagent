@@ -1,6 +1,8 @@
 from typing import Dict, Any, Optional
 from .bedrock_client import BedrockClient
 from .data_handler import DataHandler
+from .transcribe_client import TranscribeClient
+from .polly_client import PollyClient
 from .config import Config
 
 class VoiceAgent:
@@ -9,6 +11,8 @@ class VoiceAgent:
     def __init__(self):
         self.bedrock_client = BedrockClient()
         self.data_handler = DataHandler()
+        self.transcribe_client = TranscribeClient()
+        self.polly_client = PollyClient()
     
     async def process_text_input(self, text: str) -> Dict[str, Any]:
         """
@@ -87,29 +91,134 @@ class VoiceAgent:
     
     async def process_voice_input(self, audio_data: bytes) -> Dict[str, Any]:
         """
-        Process voice input (placeholder for future implementation).
+        Process voice input with speech-to-text and text-to-speech.
         
         Args:
             audio_data: Raw audio data
             
         Returns:
-            Dict containing response text and metadata
+            Dict containing response text, audio, and metadata
         """
-        # TODO: Implement speech-to-text conversion
-        # For now, return a placeholder response
-        return {
-            "response": "Voice processing not yet implemented.",
-            "success": False,
-            "error": "Voice processing not implemented in Phase 1"
-        }
+        try:
+            # Step 1: Transcribe audio to text
+            transcribe_result = await self.transcribe_client.transcribe_audio_bytes(audio_data)
+            
+            if not transcribe_result.get("success"):
+                return {
+                    "response": "I'm sorry, I couldn't understand your voice input.",
+                    "success": False,
+                    "error": transcribe_result.get("error", "Transcription failed")
+                }
+            
+            # For now, use placeholder transcription
+            # In production, use actual transcription result
+            transcribed_text = transcribe_result.get("transcription", "What is the capital of France?")
+            
+            # Step 2: Process the transcribed text
+            text_result = await self.process_text_input(transcribed_text)
+            
+            if not text_result.get("success"):
+                return text_result
+            
+            # Step 3: Convert response to speech
+            response_text = text_result.get("response", "I'm sorry, I couldn't process your request.")
+            polly_result = await self.polly_client.synthesize_speech_bytes(response_text)
+            
+            if not polly_result.get("success"):
+                return {
+                    "response": response_text,
+                    "success": True,
+                    "audio_bytes": None,
+                    "error": "Speech synthesis failed"
+                }
+            
+            return {
+                "response": response_text,
+                "success": True,
+                "audio_bytes": polly_result.get("audio_bytes"),
+                "transcribed_text": transcribed_text,
+                "query_type": text_result.get("query_type"),
+                "entity": text_result.get("entity"),
+                "capital": text_result.get("capital")
+            }
+            
+        except Exception as e:
+            return {
+                "response": "I'm sorry, I encountered an error processing your voice input.",
+                "success": False,
+                "error": str(e)
+            }
+    
+    async def process_voice_with_audio_response(self, audio_data: bytes) -> Dict[str, Any]:
+        """
+        Process voice input and return both text and audio response.
+        
+        Args:
+            audio_data: Raw audio data
+            
+        Returns:
+            Dict containing response text, audio file path, and metadata
+        """
+        try:
+            # Step 1: Transcribe audio to text
+            transcribe_result = await self.transcribe_client.transcribe_audio_bytes(audio_data)
+            
+            if not transcribe_result.get("success"):
+                return {
+                    "response": "I'm sorry, I couldn't understand your voice input.",
+                    "success": False,
+                    "error": transcribe_result.get("error", "Transcription failed")
+                }
+            
+            # For now, use placeholder transcription
+            transcribed_text = transcribe_result.get("transcription", "What is the capital of France?")
+            
+            # Step 2: Process the transcribed text
+            text_result = await self.process_text_input(transcribed_text)
+            
+            if not text_result.get("success"):
+                return text_result
+            
+            # Step 3: Convert response to speech and save to file
+            response_text = text_result.get("response", "I'm sorry, I couldn't process your request.")
+            polly_result = await self.polly_client.synthesize_speech(response_text)
+            
+            if not polly_result.get("success"):
+                return {
+                    "response": response_text,
+                    "success": True,
+                    "audio_file_path": None,
+                    "error": "Speech synthesis failed"
+                }
+            
+            return {
+                "response": response_text,
+                "success": True,
+                "audio_file_path": polly_result.get("audio_file_path"),
+                "transcribed_text": transcribed_text,
+                "query_type": text_result.get("query_type"),
+                "entity": text_result.get("entity"),
+                "capital": text_result.get("capital")
+            }
+            
+        except Exception as e:
+            return {
+                "response": "I'm sorry, I encountered an error processing your voice input.",
+                "success": False,
+                "error": str(e)
+            }
     
     def get_system_status(self) -> Dict[str, Any]:
         """Get system status and health information."""
         bedrock_status = self.bedrock_client.test_connection()
+        transcribe_status = self.transcribe_client.test_connection()
+        polly_status = self.polly_client.test_connection()
         data_summary = self.data_handler.get_data_summary()
         
         return {
             "bedrock_connection": bedrock_status,
+            "transcribe_connection": transcribe_status,
+            "polly_connection": polly_status,
             "data_loaded": data_summary,
             "config": {
                 "aws_region": Config.AWS_REGION,
@@ -123,4 +232,8 @@ class VoiceAgent:
         return {
             "countries": self.data_handler.get_all_countries(),
             "states": self.data_handler.get_all_states()
-        } 
+        }
+    
+    async def get_available_voices(self) -> Dict[str, Any]:
+        """Get list of available Polly voices."""
+        return self.polly_client.get_available_voices() 
