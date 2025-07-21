@@ -8,6 +8,7 @@ import base64
 import os
 
 from .voice_agent import VoiceAgent
+from .livekit_client import LiveKitVoiceAgent
 from .config import Config
 
 # Initialize FastAPI app
@@ -26,8 +27,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize voice agent
+# Initialize voice agent and LiveKit client
 voice_agent = VoiceAgent()
+livekit_agent = LiveKitVoiceAgent()
 
 # Pydantic models for request/response
 class TextRequest(BaseModel):
@@ -54,6 +56,13 @@ class Response(BaseModel):
     capital: Optional[str] = None
     error: Optional[str] = None
 
+class LiveKitConnectRequest(BaseModel):
+    room_name: str
+    participant_name: str
+
+class LiveKitVoiceRequest(BaseModel):
+    audio_data: str  # Base64 encoded audio
+
 def decode_base64_audio(audio_data: str) -> bytes:
     """Safely decode base64 audio data with proper padding."""
     try:
@@ -73,7 +82,7 @@ async def root():
         "message": "Voice Agent API",
         "version": "2.0.0",
         "description": "A voice agent that answers questions about country and state capitals",
-        "phase": "Phase 2 - Voice Integration"
+        "phase": "Phase 3 - LiveKit Integration"
     }
 
 @app.get("/health")
@@ -173,7 +182,7 @@ async def test_endpoint():
     """Test endpoint for development."""
     return {
         "message": "Voice Agent API is running",
-        "phase": "Phase 2 - Voice Integration",
+        "phase": "Phase 3 - LiveKit Integration",
         "features": [
             "FastAPI application",
             "Bedrock integration",
@@ -182,9 +191,52 @@ async def test_endpoint():
             "Amazon Transcribe integration",
             "Amazon Polly integration",
             "WebSocket support",
+            "LiveKit integration",
+            "Real-time voice communication",
             "Health checks"
         ]
     }
+
+# LiveKit endpoints
+@app.post("/livekit/connect")
+async def connect_to_livekit_room(request: LiveKitConnectRequest):
+    """Connect to a LiveKit room."""
+    try:
+        result = await livekit_agent.connect_to_room(request.room_name, request.participant_name)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error connecting to LiveKit room: {str(e)}")
+
+@app.post("/livekit/disconnect")
+async def disconnect_from_livekit_room():
+    """Disconnect from the current LiveKit room."""
+    try:
+        result = await livekit_agent.disconnect_from_room()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error disconnecting from LiveKit room: {str(e)}")
+
+@app.get("/livekit/status")
+async def get_livekit_status():
+    """Get LiveKit room status."""
+    try:
+        return livekit_agent.get_room_status()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting LiveKit status: {str(e)}")
+
+@app.post("/livekit/process-voice")
+async def process_livekit_voice(request: LiveKitVoiceRequest):
+    """Process voice input through LiveKit."""
+    try:
+        # Decode base64 audio data
+        audio_bytes = decode_base64_audio(request.audio_data)
+        
+        # Process through LiveKit agent
+        result = await livekit_agent.process_voice_input(audio_bytes)
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing LiveKit voice: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(

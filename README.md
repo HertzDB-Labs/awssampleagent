@@ -4,7 +4,7 @@ A voice agent that uses AWS Bedrock, Amazon Polly, and Amazon Transcribe to answ
 
 ## Project Status
 
-**Current Phase: Phase 2 - Voice Integration** ✅ **COMPLETED**
+**Current Phase: Phase 3 - LiveKit Integration** ✅ **COMPLETED**
 
 ### Phase 1: Core Setup ✅ COMPLETED
 - [x] Set up Python development environment
@@ -205,6 +205,23 @@ python test_bedrock_access.py
 python list_models.py
 ```
 
+#### Phase 3 Testing (LiveKit Integration)
+```bash
+# Test LiveKit integration
+python test_phase3.py
+
+# Start the React client
+cd ../client
+npm install
+npm start
+```
+
+This test:
+- Tests LiveKit server integration
+- Tests real-time voice communication
+- Provides client setup instructions
+- Shows Phase 3 features and capabilities
+
 ### Comprehensive Testing Suite
 
 #### 1. Basic Functionality Tests
@@ -293,11 +310,15 @@ The application uses static JSON files for country and state data:
 - [x] Base64 audio encoding/decoding
 - [x] Response audio generation
 
-### Phase 3: LiveKit Integration (Next)
-- [ ] LiveKit server setup
-- [ ] Web client with LiveKit SDK
-- [ ] Real-time audio streaming
-- [ ] End-to-end voice communication
+### Phase 3: LiveKit Integration ✅ COMPLETED
+- [x] LiveKit server integration
+- [x] Web client with React/TypeScript
+- [x] Real-time audio streaming
+- [x] End-to-end voice communication
+- [x] LiveKit Python SDK integration
+- [x] Room management and participant handling
+- [x] Real-time audio response publishing
+- [x] Modern UI with voice controls
 
 ### Phase 4: Production Ready
 - [ ] Error handling and logging
@@ -336,6 +357,19 @@ The application uses static JSON files for country and state data:
 
 ```
 vagent/
+├── client/                 # React/TypeScript Web Client
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── VoiceAgent.tsx
+│   │   │   └── VoiceAgent.css
+│   │   ├── App.tsx
+│   │   ├── App.css
+│   │   ├── index.tsx
+│   │   └── index.css
+│   ├── public/
+│   │   └── index.html
+│   ├── package.json
+│   └── README.md
 ├── server/
 │   ├── app/
 │   │   ├── __init__.py
@@ -344,6 +378,7 @@ vagent/
 │   │   ├── bedrock_client.py
 │   │   ├── polly_client.py
 │   │   ├── transcribe_client.py
+│   │   ├── livekit_client.py
 │   │   ├── data_handler.py
 │   │   └── config.py
 │   ├── data/
@@ -357,6 +392,7 @@ vagent/
 │   ├── test_local.py      # Phase 1 tests
 │   ├── test_real_audio.py # Phase 2 tests
 │   ├── test_phase2.py     # Phase 2 specific tests
+│   ├── test_phase3.py     # Phase 3 tests
 │   ├── test_bedrock_access.py
 │   ├── list_models.py
 │   └── .env               # Environment variables
@@ -443,6 +479,16 @@ pip freeze > requirements.txt
 - [x] Voice-to-text accuracy
 - [x] Text-to-speech quality
 - [x] End-to-end voice processing pipeline
+
+### Phase 3 Testing ✅
+- [x] LiveKit server integration
+- [x] Real-time voice communication
+- [x] Web client with React/TypeScript
+- [x] Room management and participant handling
+- [x] Real-time audio response publishing
+- [x] Modern UI with voice controls
+- [x] End-to-end voice communication pipeline
+- [x] Client-server integration testing
 
 ## Contributing
 

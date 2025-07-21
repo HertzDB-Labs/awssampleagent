@@ -14,9 +14,10 @@ class Config:
     AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
     
     # LiveKit Configuration
-    LIVEKIT_URL = os.getenv("LIVEKIT_URL")
+    LIVEKIT_URL = os.getenv("LIVEKIT_URL", "ws://localhost:7880")
     LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY")
     LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET")
+    LIVEKIT_TOKEN = os.getenv("LIVEKIT_TOKEN", "your_token_here")
     
     # Application Configuration
     DEBUG = os.getenv("DEBUG", "False").lower() == "true"
