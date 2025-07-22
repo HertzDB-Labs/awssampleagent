@@ -110,9 +110,14 @@ class VoiceAgent:
                     "error": transcribe_result.get("error", "Transcription failed")
                 }
             
-            # For now, use placeholder transcription
-            # In production, use actual transcription result
-            transcribed_text = transcribe_result.get("transcription", "What is the capital of France?")
+            # Use actual transcription result
+            transcribed_text = transcribe_result.get("transcription")
+            if not transcribed_text:
+                return {
+                    "response": "I'm sorry, I couldn't transcribe your voice input.",
+                    "success": False,
+                    "error": "No transcription result"
+                }
             
             # Step 2: Process the transcribed text
             text_result = await self.process_text_input(transcribed_text)
@@ -170,8 +175,14 @@ class VoiceAgent:
                     "error": transcribe_result.get("error", "Transcription failed")
                 }
             
-            # For now, use placeholder transcription
-            transcribed_text = transcribe_result.get("transcription", "What is the capital of France?")
+            # Use actual transcription result
+            transcribed_text = transcribe_result.get("transcription")
+            if not transcribed_text:
+                return {
+                    "response": "I'm sorry, I couldn't transcribe your voice input.",
+                    "success": False,
+                    "error": "No transcription result"
+                }
             
             # Step 2: Process the transcribed text
             text_result = await self.process_text_input(transcribed_text)
